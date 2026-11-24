@@ -330,6 +330,59 @@ RUN \
             && mkdir -p /library
 
 
+# Security hygiene for the final image.
+# The build toolchain and *-dev packages installed above were only needed to
+# compile and install the python wheels. Leaving them in the final image drags
+# kernel headers (linux-libc-dev) and hundreds of dev-only packages into every
+# vulnerability scan. Purge them, then refresh everything that remains.
+# Runtime tools (git, jq, sqlite3, gosu, wget, hwinfo, vainfo, curl) are kept.
+RUN \
+    echo "**** Purge build-only dependencies ****" \
+        && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get purge -y --auto-remove \
+            autoconf \
+            automake \
+            build-essential \
+            cmake \
+            g++ \
+            gcc \
+            libaom-dev \
+            libass-dev \
+            libdav1d-dev \
+            libdrm-dev \
+            libfdk-aac-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libmp3lame-dev \
+            libnuma-dev \
+            libopus-dev \
+            libssl-dev \
+            libsvtav1-dev \
+            libtool \
+            libv4l-dev \
+            libva-dev \
+            libvorbis-dev \
+            libvpx-dev \
+            libx264-dev \
+            libx265-dev \
+            make \
+            meson \
+            nasm \
+            ninja-build \
+            pkg-config \
+            python3-dev \
+    && \
+    echo "**** Refresh all remaining packages ****" \
+        && apt-get update \
+        && apt-get upgrade -y \
+        && apt-get autoremove --purge -y \
+        && apt-get clean autoclean -y \
+        && rm -rf \
+            /var/lib/apt/lists/* \
+            /var/tmp/* \
+            /tmp/*
+
+
 # Add local files
 COPY /docker/root /
 
